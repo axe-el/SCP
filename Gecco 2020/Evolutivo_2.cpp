@@ -28,7 +28,7 @@ void cruza1(vector<int> &padre1,vector<int> &padre2,vector<int> &hijo1,vector<in
 void torneo (int &i1, int &i2,vector<int> &padre1,vector<int> &padre2,vector <vector<int>> &soluciones,vector<int> costos);
 void Cobertura(vector<int> &s1,vector<int> &cobertura_s,vector < vector<int> > &columnas);
 int Factible(vector<int> cobertura_s1);
-void Arreglar(vector<int> &hijo1,vector<int> &cobertura1,vector < vector<int> > &columnas,vector < vector<int> > &filas);
+int Arreglar(vector<int> &hijo1,vector<int> &cobertura1,vector < vector<int> > &columnas,vector < vector<int> > &filas);
 int next_generacion( vector < vector<int> > &soluciones,vector<int> &best_solucion,vector < vector<int> > &filas,vector < vector<int> > &columnas,vector<int> &costos);
 void guardar(char *nombre,vector<int> &solucion1, int costo);
 void Indices(vector<int> &s1,vector<int> &indices);
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]){
     		//Semilla para numeros aleatorios 	
 		srand(atoi(argv[2]));
 		
-		//Matriz (Listas de adyacencia)	
+		//Matriz (Listas de adyacencia)
 		vector < vector<int> > filas;
 		vector < vector<int> > columnas;				
 		Read( argv[1],filas,columnas);
@@ -55,8 +55,7 @@ int main(int argc, char *argv[]){
 		
 		
 		vector<int> s1(columnas.size(),0);
-		//Vector cobertura filas
-		vector<int> cobertura_s1(filas.size(),0);
+
 		
 		vector <vector<int>> soluciones(poblacion,vector<int>(columnas.size(),0));		
 
@@ -92,6 +91,8 @@ int Costo_1(vector<int> s1){
 	}
 	return c_1;
 }
+
+
 
 //Bueno
 //Muta, cambiar el canal de una antena, por el mejor canal posible
@@ -187,6 +188,16 @@ int Factible(vector<int> cobertura_s1){
 	return -1;
 }
 
+int Costo_2(vector<int> cobertura1){
+	int c_1=0;
+	for(int i = 0 ; i< cobertura1.size() ; i++) {
+		if(cobertura1[i]>0){
+			c_1 = c_1 + 1;
+		}
+	}
+	return c_1;
+}
+
 void Quitar_columnas(vector<int> &s1,vector<int> &cobertura_s1,vector < vector<int> > &columnas,vector < vector<int> > &filas){
 
 	vector<int> orden;
@@ -227,7 +238,7 @@ void Quitar_columnas(vector<int> &s1,vector<int> &cobertura_s1,vector < vector<i
 	
 }
 
-void Arreglar(vector<int> &hijo1,vector < vector<int> > &columnas,vector < vector<int> > &filas){
+int Arreglar(vector<int> &hijo1,vector < vector<int> > &columnas,vector < vector<int> > &filas){
 	vector<int> cobertura1(filas.size(),0);
 	Cobertura(hijo1,cobertura1,columnas);
 	int F=Factible(cobertura1),columna,este;
@@ -254,8 +265,11 @@ void Arreglar(vector<int> &hijo1,vector < vector<int> > &columnas,vector < vecto
 		}			
 		F=Factible(cobertura1);
 	}
-	Quitar_columnas(hijo1,cobertura1,columnas,filas);	
+
+	Quitar_columnas(hijo1,cobertura1,columnas,filas);
 	
+	int c=Costo_2(cobertura1);	
+	return c;
 }
 
 
@@ -290,12 +304,8 @@ int next_generacion( vector < vector<int> > &soluciones,vector<int> &best_soluci
 		//Muta de ambos hijos y costo de los hijos
 		muta1(hijo1);
 		muta1(hijo2);
-		
-		Arreglar(hijo1,columnas,filas);
-		Arreglar(hijo2,columnas,filas);
-
-		c1 =Costo_1(hijo1);	
-		c2 =Costo_1(hijo2);	
+		c1 = Arreglar(hijo1,columnas,filas);
+		c2 = Arreglar(hijo2,columnas,filas);
 	
 		//Vamos creando proxima generacion
 		new_soluciones[ii]=hijo1;
@@ -304,7 +314,8 @@ int next_generacion( vector < vector<int> > &soluciones,vector<int> &best_soluci
 		ii=ii+1;
 		new_soluciones[ii]=hijo2;
 		new_costos[ii]=c2;
-				
+
+						
 		ii=ii+1;
 
 	}
@@ -342,7 +353,7 @@ int next_generacion( vector < vector<int> > &soluciones,vector<int> &best_soluci
 	//Actualizamos poblacion y costos asociados
 	costos=new_costos;
 	soluciones=new_soluciones;
-	//Regresamos costo mejor solucion
+	//Regresamos costo mejor solucion		
 	return c_b;
 }
 
@@ -357,7 +368,7 @@ int Evolutivo( vector < vector<int> > &soluciones,vector<int> &best_solucion ,ve
 
 	//Calculamos costos poblacion
 	for(int i = 0; i < soluciones.size(); i++) {
-		int c=Costo_1(soluciones[i]);
+		int c=Costo_2(soluciones[i]);
 		costos[i]=c;
 	}
 	
@@ -380,9 +391,16 @@ int Evolutivo( vector < vector<int> > &soluciones,vector<int> &best_solucion ,ve
 		gettimeofday(&t_fin, NULL);
 		secs = timeval_diff(&t_fin, &t_ini);
 		generacion=generacion+1;
-								
+
+
+		vector<int> cobertura_s1(filas.size(),0);
+		Cobertura(best_solucion,cobertura_s1,columnas);
+		int F = Factible(cobertura_s1);
+		int c1 = Costo_1(best_solucion);	
+		cout << "Fac=" << F<< " Costo=" << c1 << "\n";
+				
 	}
-		
+	costo_f = Costo_1(best_solucion);	
 	return costo_f;	
 		
 }
@@ -604,12 +622,14 @@ void guardar(char *nombre,vector<int> &solucion1, int costo){
 	vector<int> indices;
 	Indices(solucion1,indices);
 
+
+
 	//Costo
 	//Tiempo
 	ofstream file;			
 	file.open(nombre);
 	file <<costo<<"\n";
-	
+
 	//Solucion(columnas que si pertenecen)	
 	for(int i = 0; i < indices.size(); i++) {
 		file << indices[i] <<"\n";		
